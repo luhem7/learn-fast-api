@@ -1,0 +1,12 @@
+{
+	"servers": {
+		"my-mcp-server-bbca8f8b": {
+			"type": "stdio",
+			"command": "./.venv/bin/python",
+			"args": [
+				"mcp_server.py"
+			]
+		}
+	},
+	"inputs": []
+}
