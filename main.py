@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from typing import Dict, Optional, List
+from pydantic import BaseModel
 
 app = FastAPI(
     title="Learn FastAPI",
@@ -10,6 +11,11 @@ app = FastAPI(
         "url": "https://www.gnu.org/licenses/gpl-3.0.html",
     },
 )
+
+
+class StockPrice(BaseModel):
+    ticker: str
+    price: float
 
 
 FICTIONAL_STOCK_DATA = {
@@ -74,6 +80,50 @@ async def get_stocks():
             "name": stock_info["name"]
         })
     return stocks
+
+
+@app.get(
+    "/stocks/{ticker}/price",
+    response_model=StockPrice,
+    summary="Get Stock Price",
+    description="Returns the latest price of a stock given its ticker symbol",
+    response_description="A JSON object containing the stock price information",
+    tags=["stocks"]
+)
+async def get_stock_price(ticker: str):
+    """
+    Get the latest price of a stock by ticker symbol.
+    
+    This endpoint fetches the current price of a stock from the FICTIONAL_STOCK_DATA
+    dictionary using the provided ticker symbol.
+    
+    Args:
+        ticker: The stock ticker symbol (e.g., AAPL, GOOGL, MSFT)
+    
+    Returns:
+        StockPrice: An object containing:
+            - ticker: The stock ticker symbol
+            - price: The current price of the stock
+    
+    Raises:
+        HTTPException: 401 error if the ticker is not available for trading
+    """
+    # Convert ticker to uppercase for case-insensitive matching
+    ticker_upper = ticker.upper()
+    
+    # Check if the ticker exists in our fictional stock data
+    if ticker_upper not in FICTIONAL_STOCK_DATA:
+        raise HTTPException(
+            status_code=401, 
+            detail=f"Stock ticker '{ticker}' is not available for trading"
+        )
+    
+    stock_info = FICTIONAL_STOCK_DATA[ticker_upper]
+    
+    return StockPrice(
+        ticker=ticker_upper,
+        price=stock_info["price"]
+    )
 
 
 if __name__ == "__main__":
