@@ -18,6 +18,19 @@ class StockPrice(BaseModel):
     price: float
 
 
+class BuyStockRequest(BaseModel):
+    ticker: str
+    quantity: int
+
+
+class BuyStockResponse(BaseModel):
+    ticker: str
+    quantity: int
+    price_per_share: float
+    total_cost: float
+    remaining_volume: int
+
+
 FICTIONAL_STOCK_DATA = {
     "AAPL": {"name": "Apple", "price": 150.12, "volume": 10},
     "GOOGL": {"name": "Google", "price": 2750.65, "volume": 50},
@@ -123,6 +136,78 @@ async def get_stock_price(ticker: str):
     return StockPrice(
         ticker=ticker_upper,
         price=stock_info["price"]
+    )
+
+
+@app.post(
+    "/stocks/buy",
+    response_model=BuyStockResponse,
+    summary="Buy Stock Shares",
+    description="Buy a specified quantity of shares for a given stock ticker",
+    response_description="A JSON object containing the purchase details",
+    tags=["stocks"]
+)
+async def buy_stock(request: BuyStockRequest):
+    """
+    Buy shares of a stock.
+    
+    This endpoint allows purchasing a specified quantity of shares for a given stock.
+    It validates that the stock exists and that sufficient shares are available.
+    
+    Args:
+        request: BuyStockRequest containing ticker and quantity to buy
+    
+    Returns:
+        BuyStockResponse: An object containing:
+            - ticker: The stock ticker symbol
+            - quantity: Number of shares purchased
+            - price_per_share: Price per individual share
+            - total_cost: Total cost of the purchase
+            - remaining_volume: Remaining shares available after purchase
+    
+    Raises:
+        HTTPException: 401 error if ticker doesn't exist or insufficient shares available
+    """
+    # Convert ticker to uppercase for case-insensitive matching
+    ticker_upper = request.ticker.upper()
+    
+    # Check if the ticker exists in our fictional stock data
+    if ticker_upper not in FICTIONAL_STOCK_DATA:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Stock ticker '{request.ticker}' is not available for trading"
+        )
+    
+    stock_info = FICTIONAL_STOCK_DATA[ticker_upper]
+    
+    # Check if sufficient shares are available
+    if request.quantity > stock_info["volume"]:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Insufficient shares available. Requested: {request.quantity}, Available: {stock_info['volume']}"
+        )
+    
+    # Validate quantity is positive
+    if request.quantity <= 0:
+        raise HTTPException(
+            status_code=401,
+            detail="Quantity must be a positive number"
+        )
+    
+    # Calculate purchase details
+    price_per_share = stock_info["price"]
+    total_cost = price_per_share * request.quantity
+    new_volume = stock_info["volume"] - request.quantity
+    
+    # Update the available volume (simulate the purchase)
+    FICTIONAL_STOCK_DATA[ticker_upper]["volume"] = new_volume
+    
+    return BuyStockResponse(
+        ticker=ticker_upper,
+        quantity=request.quantity,
+        price_per_share=price_per_share,
+        total_cost=total_cost,
+        remaining_volume=new_volume
     )
 
 
