@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Query
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 app = FastAPI(
     title="Learn FastAPI",
@@ -10,6 +10,13 @@ app = FastAPI(
         "url": "https://www.gnu.org/licenses/gpl-3.0.html",
     },
 )
+
+
+FICTIONAL_STOCK_DATA = {
+    "AAPL": {"name": "Apple", "price": 150.12, "volume": 10},
+    "GOOGL": {"name": "Google", "price": 2750.65, "volume": 50},
+    "MSFT": {"name": "Microsoft", "price": 299.87, "volume": 75},
+}
 
 
 @app.get(
@@ -38,6 +45,35 @@ async def hello_world(name: Optional[str] = Query(None, description="Optional na
         return {"message": f"Hello {name}!"}
     else:
         return {"message": "Hello World!"}
+
+
+@app.get(
+    "/stocks",
+    response_model=List[Dict[str, str]],
+    summary="Get Available Stocks",
+    description="Returns a list of fictional stocks available for trading",
+    response_description="A list of stock objects with ticker and name information",
+    tags=["stocks"]
+)
+async def get_stocks():
+    """
+    Get the list of fictional stocks available to trade.
+    
+    This endpoint returns all available fictional stocks from the FICTIONAL_STOCK_DATA
+    dictionary, providing both the ticker symbol and the common name of each stock.
+    
+    Returns:
+        List[Dict[str, str]]: A list of dictionaries, each containing:
+            - ticker: The stock ticker symbol
+            - name: The common name of the stock
+    """
+    stocks = []
+    for ticker, stock_info in FICTIONAL_STOCK_DATA.items():
+        stocks.append({
+            "ticker": ticker,
+            "name": stock_info["name"]
+        })
+    return stocks
 
 
 if __name__ == "__main__":
